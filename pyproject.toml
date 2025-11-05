@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "social-media-analytics-insights"
+version = "0.1.0"
+description = "Streamlit app for student social media analytics"
+requires-python = ">=3.8"
+dependencies = [
+  "streamlit>=1.22.0",
+  "pandas>=1.5.0",
+  "plotly>=5.10.0",
+  "seaborn>=0.12.0",
+  "matplotlib>=3.5.0",
+  "numpy>=1.23.0",
+  "statsmodels>=0.14.0",
+  "scikit-learn>=1.1.0"
+]

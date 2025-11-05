@@ -9,6 +9,14 @@ import statsmodels.api as sm
 import helper
 import os,sys
 
+# sklearn imports used by the 'Predict Your Score' section
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.model_selection import train_test_split, KFold, cross_val_score
+from sklearn.pipeline import Pipeline
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
+
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
@@ -23,7 +31,7 @@ st.sidebar.title("Student Social Media Analytics")
 # use width='stretch' instead of deprecated use_container_width
 st.sidebar.image("image.png", caption="Student Social Media Analytics Image", width='stretch')
 user_menu=st.sidebar.radio(
-    'Select an Option',('Overview','Usage & Demographics','Behavioral & Lifestyle Impact','Psychological & Academic Outcomes')
+    'Select an Option',('Overview','Predict Your Score','Usage & Demographics','Behavioral & Lifestyle Impact','Psychological & Academic Outcomes')
 )
 
 # Overview Page
@@ -35,6 +43,122 @@ if user_menu=='Overview':
     """)
     # use width='stretch' instead of deprecated use_container_width
     st.image("image.png", caption="Social Media Addiction Overview", width='stretch')
+
+elif user_menu=='Predict Your Score':
+
+    st.title("📊 Social Media Analytics — Linear Regression Dashboard")
+    st.write(
+        "This dashboard trains **Linear Regression** models to predict **Addicted_Score** and **Mental_Health_Score** from demographic and behavior features."
+    )
+
+    # ----------------------------
+    # Dataset Already Loaded in df
+    # ----------------------------
+
+    FEATURES = [
+        "Age",
+        "Gender",
+        "Academic_Level",
+        "Most_Used_Platform",
+        "Sleep_Hours_Per_Night",
+        "Relationship_Status",
+        "Conflicts_Over_Social_Media",
+    ]
+
+    TARGETS = ["Addicted_Score", "Mental_Health_Score"]
+
+    num_features = ["Age", "Sleep_Hours_Per_Night", "Conflicts_Over_Social_Media"]
+    cat_features = ["Gender", "Academic_Level", "Most_Used_Platform", "Relationship_Status"]
+
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ("num", "passthrough", num_features),
+            ("cat", OneHotEncoder(handle_unknown="ignore"), cat_features),
+        ]
+    )
+
+    random_state = 42
+    X = df[FEATURES]
+
+    X_train, X_test, y_train_A, y_test_A = train_test_split(
+        X, df["Addicted_Score"], test_size=0.25, random_state=random_state
+    )
+    X_train2, X_test2, y_train_M, y_test_M = train_test_split(
+        X, df["Mental_Health_Score"], test_size=0.25, random_state=random_state
+    )
+
+    pipe_A = Pipeline(steps=[("prep", preprocessor), ("lr", LinearRegression())])
+    pipe_M = Pipeline(steps=[("prep", preprocessor), ("lr", LinearRegression())])
+
+    pipe_A.fit(X_train, y_train_A)
+    pipe_M.fit(X_train2, y_train_M)
+
+    pred_A = pipe_A.predict(X_test)
+    pred_M = pipe_M.predict(X_test2)
+
+    def compute_metrics(y_true, y_pred):
+        r2 = r2_score(y_true, y_pred)
+        mae = mean_absolute_error(y_true, y_pred)
+        # Some sklearn versions don't accept the `squared` kwarg; compute RMSE explicitly
+        mse = mean_squared_error(y_true, y_pred)
+        rmse = mse ** 0.5
+        return r2, mae, rmse
+
+    r2_A, mae_A, rmse_A = compute_metrics(y_test_A, pred_A)
+    r2_M, mae_M, rmse_M = compute_metrics(y_test_M, pred_M)
+
+    kf = KFold(n_splits=5, shuffle=True, random_state=random_state)
+    cv_A = cross_val_score(pipe_A, X, df["Addicted_Score"], cv=kf, scoring="r2")
+    cv_M = cross_val_score(pipe_M, X, df["Mental_Health_Score"], cv=kf, scoring="r2")
+
+    st.subheader("📈 Model Performance")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Test R² (Addiction)", f"{r2_A:.3f}")
+        st.metric("MAE", f"{mae_A:.3f}")
+        st.metric("RMSE", f"{rmse_A:.3f}")
+        st.caption(f"CV R² Mean: {cv_A.mean():.3f}")
+
+    with col2:
+        st.metric("Test R² (Mental Health)", f"{r2_M:.3f}")
+        st.metric("MAE", f"{mae_M:.3f}")
+        st.metric("RMSE", f"{rmse_M:.3f}")
+        st.caption(f"CV R² Mean: {cv_M.mean():.3f}")
+
+    st.divider()
+    st.subheader("🧮 Predict Your Own Scores")
+
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        age = st.number_input("Age", min_value=13, max_value=80, value=int(df["Age"].median()))
+        gender = st.selectbox("Gender", sorted(df["Gender"].unique()))
+    with c2:
+        acad = st.selectbox("Academic Level", sorted(df["Academic_Level"].unique()))
+        platform = st.selectbox("Most Used Platform", sorted(df["Most_Used_Platform"].unique()))
+    with c3:
+        sleep = st.number_input("Sleep Hours per Night", min_value=0.0, max_value=12.0, step=0.1, value=float(df["Sleep_Hours_Per_Night"].median()))
+        rel = st.selectbox("Relationship Status", sorted(df["Relationship_Status"].unique()))
+    with c4:
+        conflicts = st.number_input("Conflicts Over Social Media (0-5)", min_value=0, max_value=10, value=int(df["Conflicts_Over_Social_Media"].median()))
+
+    user_row = pd.DataFrame({
+        "Age": [age],
+        "Gender": [gender],
+        "Academic_Level": [acad],
+        "Most_Used_Platform": [platform],
+        "Sleep_Hours_Per_Night": [sleep],
+        "Relationship_Status": [rel],
+        "Conflicts_Over_Social_Media": [conflicts],
+    })
+
+    pred_user_A = pipe_A.predict(user_row)[0]
+    pred_user_M = pipe_M.predict(user_row)[0]
+
+    st.metric("Predicted Addicted Score", f"{pred_user_A:.2f}")
+    st.metric("Predicted Mental Health Score", f"{pred_user_M:.2f}")
+
+    st.success("✅ Prediction Complete!")
+
 
 # Usage & Demographics
 #Average Daily Social Media Usage by Age Group -- Bar Chart / Line Chart
