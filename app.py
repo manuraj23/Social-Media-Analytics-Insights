@@ -8,8 +8,7 @@ import plotly.graph_objects as go
 import statsmodels.api as sm
 import helper
 import os,sys
-
-# sklearn imports used by the 'Predict Your Score' section
+import numpy as np
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split, KFold, cross_val_score
@@ -25,24 +24,33 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
-df = pd.read_csv(resource_path('Students Social Media Addiction.csv'))
+df =pd.read_csv(resource_path('Students Social Media Addiction.csv'))
 
-st.sidebar.title("Student Social Media Analytics")
+st.sidebar.title("DashBoard")
 # use width='stretch' instead of deprecated use_container_width
-st.sidebar.image("image.png", caption="Student Social Media Analytics Image", width='stretch')
+# st.sidebar.image("image.png", caption="Student Social Media Analytics Image", width='stretch')
 user_menu=st.sidebar.radio(
     'Select an Option',('Overview','Predict Your Score','Usage & Demographics','Behavioral & Lifestyle Impact','Psychological & Academic Outcomes')
 )
 
+# Sidebar option to preview/download the raw dataframe
+show_data = st.sidebar.checkbox("Show raw dataset", value=False)
+if show_data:
+    st.subheader("Dataset preview")
+    st.dataframe(df)
+    csv = df.to_csv(index=False)
+    st.download_button("Download dataset (CSV)", data=csv, file_name="Students_Social_Media_Addiction.csv", mime="text/csv")
+
 # Overview Page
 if user_menu=='Overview':
-    st.title("Overview")
+    st.title("Social Media Addiction Overview")
+    st.image("image.png", caption="Social Media Addiction Overview", width='stretch')
+
+    
     st.markdown("""
     This application provides insights into the social media addiction patterns among students. 
     It includes various analyses and visualizations to help understand the impact of social media on students' lives.
     """)
-    # use width='stretch' instead of deprecated use_container_width
-    st.image("image.png", caption="Social Media Addiction Overview", width='stretch')
 
 elif user_menu=='Predict Your Score':
 
@@ -157,7 +165,6 @@ elif user_menu=='Predict Your Score':
     st.metric("Predicted Addicted Score", f"{pred_user_A:.2f}")
     st.metric("Predicted Mental Health Score", f"{pred_user_M:.2f}")
 
-    st.success("✅ Prediction Complete!")
 
 
 # Usage & Demographics
@@ -223,26 +230,29 @@ elif user_menu=='Behavioral & Lifestyle Impact':
     fig4 = px.violin(df, x='Affects_Academic_Performance', y='Sleep_Hours_Per_Night', box=True,
                      title='Sleep Hours Comparison Based on Affects Academic Performance')
     st.plotly_chart(fig4)
+
+
+
 # Psychological & Academic Outcomes
 #Social Media Usage Impact on Academic Performance -- Grouped Bar Chart
 #User Mental Health Score vs Addicted Score -- Heatmap
 #Mental Health Score by Platform -- Bar Chart
 elif user_menu=='Psychological & Academic Outcomes':
     st.title("Psychological & Academic Outcomes")
-    st.subheader("Usage vs Sleep Duration Relationship")
-    # CSV uses 'Sleep_Hours_Per_Night' for sleep duration
-    fig1 = px.scatter(df, x='Avg_Daily_Usage_Hours', y='Sleep_Hours_Per_Night', trendline='ols',
-                     title='Usage vs Sleep Duration Relationship')
+    st.subheader("Social Media Usage Impact on Academic Performance")
+    usage_academic = df.groupby(['Avg_Daily_Usage_Hours', 'Affects_Academic_Performance']).size().reset_index(name='Count')
+    fig1 = px.bar(usage_academic, x='Avg_Daily_Usage_Hours', y='Count', color='Affects_Academic_Performance',
+                  title='Social Media Usage Impact on Academic Performance', barmode='group')
     st.plotly_chart(fig1)
 
-    st.subheader("Conflicts Due to Social Media Across Relationship Status")
-    # CSV uses 'Conflicts_Over_Social_Media'
-    fig2 = px.box(df, x='Relationship_Status', y='Conflicts_Over_Social_Media',
-                 title='Conflicts Due to Social Media Across Relationship Status')
+    st.subheader("User Mental Health Score vs Addicted Score")
+    heatmap_data = df.pivot_table(index='Mental_Health_Score', columns='Addicted_Score', aggfunc='size', fill_value=0)
+    fig2 = px.imshow(heatmap_data, labels=dict(x="Addicted Score", y="Mental Health Score", color="Count"),
+                     title='User Mental Health Score vs Addicted Score')
     st.plotly_chart(fig2)
 
-    st.subheader("Addiction Score Distribution")
-    # CSV column name is 'Addicted_Score'
-    fig3 = px.histogram(df, x='Addicted_Score', nbins=30,
-                     title='Addiction Score Distribution')
+    st.subheader("Mental Health Score by Platform")
+    mental_health_platform = df.groupby('Most_Used_Platform')['Mental_Health_Score'].mean().reset_index()
+    fig3 = px.bar(mental_health_platform, x='Most_Used_Platform', y='Mental_Health_Score',
+                  title='Mental Health Score by Platform')
     st.plotly_chart(fig3)

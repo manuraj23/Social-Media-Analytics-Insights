@@ -11,3 +11,40 @@ Tasks:
 4. Evaluate results through metrics like accuracy, recall, or RMSE as applicable.
 5. Generate plots to compare predicted vs. actual outcomes.
 6. Discuss findings and propose enhancements or applications within social media analytics."
+
+
+Different platform
+| Platform       |
+| -------------- |
+| Instagram      |
+| Twitter        |
+| TikTok         |
+| YouTube        |
+| Facebook       |
+| LinkedIn       |
+| Snapchat       |
+| LINE           |
+| KakaoTalk      |
+| VKontakte (VK) |
+| WhatsApp       |
+| WeChat         |
+
+
+| Academic Level    |
+| ----------------- |
+| **Undergraduate** |
+| **Graduate**      |
+| **High School**   |
+
+
+| Gender     |
+| ---------- |
+| **Female** |
+| **Male**   |
+
+
+| Relationship Status |
+| ------------------- |
+| **In Relationship** |
+| **Single**          |
+| **Complicated**     |
