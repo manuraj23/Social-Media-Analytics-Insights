@@ -17,7 +17,6 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 
 def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
         base_path = sys._MEIPASS
     except Exception:
@@ -27,19 +26,10 @@ def resource_path(relative_path):
 df =pd.read_csv(resource_path('Students Social Media Addiction.csv'))
 
 st.sidebar.title("DashBoard")
-# use width='stretch' instead of deprecated use_container_width
 # st.sidebar.image("image.png", caption="Student Social Media Analytics Image", width='stretch')
 user_menu=st.sidebar.radio(
     'Select an Option',('Overview','Predict Your Score','Usage & Demographics','Behavioral & Lifestyle Impact','Psychological & Academic Outcomes')
 )
-
-# Sidebar option to preview/download the raw dataframe
-show_data = st.sidebar.checkbox("Show raw dataset", value=False)
-if show_data:
-    st.subheader("Dataset preview")
-    st.dataframe(df)
-    csv = df.to_csv(index=False)
-    st.download_button("Download dataset (CSV)", data=csv, file_name="Students_Social_Media_Addiction.csv", mime="text/csv")
 
 # Overview Page
 if user_menu=='Overview':
@@ -54,14 +44,12 @@ if user_menu=='Overview':
 
 elif user_menu=='Predict Your Score':
 
-    st.title("📊 Social Media Analytics — Linear Regression Dashboard")
+    st.title("📊 Social Media Analytics — Linear Regression")
     st.write(
         "This dashboard trains **Linear Regression** models to predict **Addicted_Score** and **Mental_Health_Score** from demographic and behavior features."
     )
 
-    # ----------------------------
-    # Dataset Already Loaded in df
-    # ----------------------------
+    
 
     FEATURES = [
         "Age",
@@ -107,7 +95,7 @@ elif user_menu=='Predict Your Score':
     def compute_metrics(y_true, y_pred):
         r2 = r2_score(y_true, y_pred)
         mae = mean_absolute_error(y_true, y_pred)
-        # Some sklearn versions don't accept the `squared` kwarg; compute RMSE explicitly
+
         mse = mean_squared_error(y_true, y_pred)
         rmse = mse ** 0.5
         return r2, mae, rmse
@@ -125,13 +113,13 @@ elif user_menu=='Predict Your Score':
         st.metric("Test R² (Addiction)", f"{r2_A:.3f}")
         st.metric("MAE", f"{mae_A:.3f}")
         st.metric("RMSE", f"{rmse_A:.3f}")
-        st.caption(f"CV R² Mean: {cv_A.mean():.3f}")
+        
 
     with col2:
         st.metric("Test R² (Mental Health)", f"{r2_M:.3f}")
         st.metric("MAE", f"{mae_M:.3f}")
         st.metric("RMSE", f"{rmse_M:.3f}")
-        st.caption(f"CV R² Mean: {cv_M.mean():.3f}")
+        
 
     st.divider()
     st.subheader("🧮 Predict Your Own Scores")
@@ -204,7 +192,6 @@ elif user_menu=='Usage & Demographics':
 #Usage vs Sleep Duration Relationship -- Scatter Plot
 #Conflicts Due to Social Media Across Relationship Status -- Box Plot
 #Addiction Score Distribution -- Histogram
-#Sleep Hours Comparison Based on ‘Affects Academic Performance’ -- Violin Plot
 
 elif user_menu=='Behavioral & Lifestyle Impact':
     st.title("Behavioral & Lifestyle Impact")
@@ -226,10 +213,7 @@ elif user_menu=='Behavioral & Lifestyle Impact':
                         title='Addiction Score Distribution')
     st.plotly_chart(fig3)
 
-    st.subheader("Sleep Hours Comparison Based on ‘Affects Academic Performance’")
-    fig4 = px.violin(df, x='Affects_Academic_Performance', y='Sleep_Hours_Per_Night', box=True,
-                     title='Sleep Hours Comparison Based on Affects Academic Performance')
-    st.plotly_chart(fig4)
+    
 
 
 

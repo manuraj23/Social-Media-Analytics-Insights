@@ -1,0 +1,19 @@
+>>> from pyspark.sql import SparkSession
+
+>>> spark = SparkSession.builder.getOrCreate()
+>>> data = spark.read.csv("C:/Users/manur/Downloads/StudentSocialMediaPrediction.csv", header = True,inferSchema = True)
+>>> data.show()
+>>> data.printSchema()
+>>> feature_columns = data.columns[:-1]
+>>> from pyspark.ml.feature import VectorAssembler
+>>> assembler = VectorAssembler(inputCols =feature_columns,outputCol="Addicted_Score")
+>>> data_2 = assembler.transform(data)
+>>> data_2.show()
+>>> train,test =data_2.randomSplit([0.75,0.25])
+>>> from pyspark.ml.regression import LinearRegression
+>>> algo = LinearRegression(featuresCol ="Addicted_Score",labelCol ="medv")
+>>> model = algo.fit(train)
+>>> evaluation_summary = model.evaluate(test)
+>>> evaluation_summary.meanAbsoluteError
+>>> predictions = model.transform(test)
+>>> predictions.select(predictions.columns[12:]).show()
